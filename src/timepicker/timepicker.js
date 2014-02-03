@@ -251,4 +251,96 @@ angular.module('ui.bootstrap.timepicker', [])
       }
     }
   };
+})
+
+.constant('timepickerPopupConfig', {
+  'meridians': true
+})
+
+.directive('timepickerPopup', ['$document', '$compile', '$position', 'dateFilter', 'timepickerPopupConfig', function($document, $compile, $position, dateFilter, timepickerPopupConfig) {
+  return {
+    restrict: 'EA',
+    priority: 1,
+    require: 'ngModel',
+    scope: {},
+    link: function(scope, element, attrs, ngModel) {
+      var popupEl = angular.element('<div timepicker-popup-wrap> <div timepicker></div> </div>').attr({'ng-model': 'time', 'ng-change': 'pickerChange()'}),
+          meridians = angular.isDefined(attrs['meridians'])?attrs['meridians']:timepickerPopupConfig['meridians'],
+          timeFormat = meridians?'hh:mm a':'HH:mm';
+
+      angular.element(popupEl.children()[0]).attr(angular.extend({}, attrs.timepickerOptions));
+      element.after($compile(popupEl)(scope));
+
+      ngModel.$render = function(updateDisplay) {
+        element.val(ngModel.$viewValue ? dateFilter(ngModel.$viewValue, timeFormat) : '');
+        scope.time = ngModel.$modelValue;
+      };
+      element.bind('input change keyup', function() {
+        scope.$apply(function() {
+          if (angular.isDate(ngModel.$modelValue)) {
+            scope.time = ngModel.$modelValue;
+          }
+        });
+      });
+      element.bind('focus', function() {
+        scope.$apply(function() {
+          scope.position = $position.position(element);
+          scope.position.top = scope.position.top + element.prop('offsetHeight');
+          scope.isOpen = true;
+        });
+      });
+      $document.bind('click', function(e) {
+        scope.$apply(function() {
+          if (e.target !== element[0]) {
+            scope.isOpen = false;
+          }
+        });
+      });
+      scope.pickerChange = function() {
+        ngModel.$setViewValue(scope.time);
+        ngModel.$render();
+      };
+      ngModel.$parsers.unshift(function (viewValue) {
+        if (angular.isDate(viewValue)) {
+          return viewValue;
+        } else if (!viewValue) {
+          return null;
+        }
+        var isAM = (viewValue.indexOf('AM') == -1)?false:true,
+            isPM = (viewValue.indexOf('PM') == -1)?false:true,
+            colon = viewValue.indexOf(':'),
+            hour = parseInt(viewValue.substring(0, colon), 10),
+            minute =  parseInt(viewValue.substring(colon+1), 10),
+            newTime = new Date();
+        if (! (minute < 60 && minute > -1)) {
+          return null;
+        }
+        if(meridians && (hour > 0 && hour < 13)) {
+          newTime.setHours((hour + (((isPM && hour != 12) || (isAM && hour == 12))?12:0)));
+          newTime.setMinutes(minute);
+          return newTime;
+        } else if (hour > -1 && hour < 25) {
+          newTime.setHours(hour);
+          newTime.setMinutes(minute);
+          return newTime;
+        }
+      });
+    }
+  };
+}])
+
+.directive('timepickerPopupWrap', function() {
+  return {
+    restrict:'EA',
+    replace: true,
+    transclude: true,
+    templateUrl: 'template/timepicker/popup.html',
+    link:function (scope, element, attrs) {
+      element.bind('click', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+    }
+  };
 });
+
