@@ -1,4 +1,4 @@
-angular.module('ui.bootstrap.timepicker', [])
+angular.module('ui.bootstrap.timepicker', ['ui.bootstrap.position'])
 
 .constant('timepickerConfig', {
   hourStep: 1,
@@ -254,7 +254,7 @@ angular.module('ui.bootstrap.timepicker', [])
 })
 
 .constant('timepickerPopupConfig', {
-  'meridians': true
+  'show-meridian': true
 })
 
 .directive('timepickerPopup', ['$document', '$compile', '$position', 'dateFilter', 'timepickerPopupConfig', function($document, $compile, $position, dateFilter, timepickerPopupConfig) {
@@ -265,10 +265,10 @@ angular.module('ui.bootstrap.timepicker', [])
     scope: {},
     link: function(scope, element, attrs, ngModel) {
       var popupEl = angular.element('<div timepicker-popup-wrap> <div timepicker></div> </div>').attr({'ng-model': 'time', 'ng-change': 'pickerChange()'}),
-          meridians = angular.isDefined(attrs['meridians'])?attrs['meridians']:timepickerPopupConfig['meridians'],
-          timeFormat = meridians?'hh:mm a':'HH:mm';
+          showMeridian = angular.isDefined(attrs.showMeridian)?scope.$parent.$eval(attrs.showMeridian):timepickerPopupConfig['show-meridian'],
+          timeFormat = showMeridian?'hh:mm a':'HH:mm';
 
-      angular.element(popupEl.children()[0]).attr(angular.extend({}, attrs.timepickerOptions));
+      angular.element(popupEl.children()[0]).attr(angular.extend({}, scope.$parent.$eval(attrs.timepickerOptions)));
       element.after($compile(popupEl)(scope));
 
       ngModel.$render = function(updateDisplay) {

@@ -31,3 +31,12 @@ All settings can be provided as attributes in the `<timepicker>` or globally con
  * `mousewheel`
  	_(Defaults: true)_ :
  	 Whether user can scroll inside the hours & minutes input to increase or decrease it's values.
+
+
+### Popup Settings ###
+
+Options for timepicker can be passed as JSON using the `timepicker-options` attribute.
+
+ * `show-meridian`
+ 	_(Default: true)_ :
+ 	Whether to display 12H or 24H mode.

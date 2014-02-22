@@ -1,10 +1,24 @@
 <div ng-controller="TimepickerDemoCtrl">
 
-  <timepicker ng-model="mytime" ng-change="changed()" hour-step="hstep" minute-step="mstep" show-meridian="ismeridian"></timepicker>
-
   <pre class="alert alert-info">Time is: {{mytime | date:'shortTime' }}</pre>
+  <h4>Inline</h4>
+  <div>
+    <timepicker ng-model="mytime" ng-change="changed()" hour-step="hstep" minute-step="mstep" show-meridian="ismeridian"></timepicker>
+  </div>
 
-  <div class="row"> 
+  <h4>Popup</h4>
+  <div>
+    <input type="text" class="form-control" timepicker-popup ng-model='mytime'>
+  </div>
+  <hr>
+  <div class="row">
+    <div class="col-xs-12">
+      <button class="btn btn-info" ng-click="toggleMode()">12H / 24H</button>
+      <button class="btn btn-default" ng-click="update()">Set to 14:00</button>
+      <button class="btn btn-danger" ng-click="clear()">Clear</button>
+    </div>
+  </div>
+  <div class="row">
     <div class="col-xs-6">
         Hours step is:
       <select class="form-control" ng-model="hstep" ng-options="opt for opt in options.hstep"></select>
@@ -14,11 +28,4 @@
       <select class="form-control" ng-model="mstep" ng-options="opt for opt in options.mstep"></select>
     </div>
   </div>
-
-  <hr>
-
-  <button class="btn btn-info" ng-click="toggleMode()">12H / 24H</button>
-  <button class="btn btn-default" ng-click="update()">Set to 14:00</button>
-  <button class="btn btn-danger" ng-click="clear()">Clear</button>
-
 </div>

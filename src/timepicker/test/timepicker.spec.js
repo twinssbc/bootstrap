@@ -3,6 +3,8 @@ describe('timepicker directive', function () {
 
   beforeEach(module('ui.bootstrap.timepicker'));
   beforeEach(module('template/timepicker/timepicker.html'));
+  beforeEach(module('template/timepicker/popup.html'));
+
   beforeEach(inject(function(_$compile_, _$rootScope_) {
     $compile = _$compile_;
     $rootScope = _$rootScope_;
@@ -874,5 +876,72 @@ describe('timepicker directive', function () {
     });
   });
 
+  describe('timepicker-popup', function () {
+    var inputEl, dropdownEl, changeInputValueTo, $document;
+
+    function assignElements(wrapElement) {
+      inputEl = wrapElement.find('input');
+      dropdownEl = wrapElement.find('ul');
+      element = dropdownEl.find('table');
+    }
+
+    describe('', function () {
+      beforeEach(inject(function(_$document_, $sniffer) {
+        $document = _$document_;
+        var wrapElement = $compile('<div><input ng-model="time" timepicker-popup><div>')($rootScope);
+        $rootScope.$digest();
+        assignElements(wrapElement);
+
+        changeInputValueTo = function (el, value) {
+          el.val(value);
+          el.trigger($sniffer.hasEvent('input') ? 'input' : 'change');
+          $rootScope.$digest();
+        };
+      }));
+      it('display the correct non-meridian value', function() {
+        expect(inputEl.val()).toBe('02:40 PM');
+      });
+
+      it('initially timepicker-popup is hidden', function() {
+        expect(dropdownEl).toBeHidden();
+      });
+
+      it('timepicker is show on focus', function() {
+        inputEl.focus();
+        expect(dropdownEl).not.toBeHidden();
+      });
+
+      it('timepicker updates on model change', function() {
+        $rootScope.time = newTime(16, 40);
+        $rootScope.$digest();
+        expect(inputEl.val()).toBe('04:40 PM');
+      });
+      describe('timepicker-popup with no meridian ', function () {
+        beforeEach(inject(function(_$document_, $sniffer) {
+          var wrapElement = $compile('<div><input ng-model="time" timepicker-popup show-meridian="false"><div>')($rootScope);
+          $rootScope.$digest();
+          assignElements(wrapElement);
+        }));
+
+        it('timepicker handles meridians correctly', function() {
+          expect(inputEl.val()).toBe('14:40');
+        });
+      });
+      describe('timepicker-popup with timepicker-options ', function () {
+        beforeEach(inject(function(_$document_, $sniffer) {
+
+          var opts = {'show-meridian': false },
+          wrapElement = $compile('<div><input ng-model="time" timepicker-popup timepicker-options="opts"><div>')($rootScope);
+          $rootScope.$digest();
+          assignElements(wrapElement);
+        }));
+
+        it('timepicker passes options', function() {
+          element.find('tr').eq(1).find('td').eq(2);
+        });
+      });
+
+    });
+  });
 });
 
