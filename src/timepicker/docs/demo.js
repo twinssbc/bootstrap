@@ -28,4 +28,10 @@ var TimepickerDemoCtrl = function ($scope) {
   $scope.clear = function() {
     $scope.mytime = null;
   };
+
+  $scope.open = function($event) {
+    $event.preventDefault();
+    $event.stopPropagation();
+    $scope.opened = true;
+  };
 };

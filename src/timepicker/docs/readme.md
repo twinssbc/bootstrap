@@ -36,7 +36,13 @@ All settings can be provided as attributes in the `<timepicker>` or globally con
 ### Popup Settings ###
 
 Options for timepicker can be passed as JSON using the `timepicker-options` attribute.
+Specific settings for the `timepicker-popup`, that can globally configured through the `timepickerPopupConfig`, are:
 
  * `show-meridian`
  	_(Default: true)_ :
  	Whether to display 12H or 24H mode.
+
+ * `timepicker-append-to-body`
+  _(Default: false)_:
+  Append the timepicker popup element to `body`, rather than inserting after `timepicker-popup`. For global configuration, use `timepickerPopupConfig.appendToBody`.
+

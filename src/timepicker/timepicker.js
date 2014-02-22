@@ -254,76 +254,136 @@ angular.module('ui.bootstrap.timepicker', ['ui.bootstrap.position'])
 })
 
 .constant('timepickerPopupConfig', {
-  'show-meridian': true
+  showMeridian: true,
+  appendToBody: false
 })
 
-.directive('timepickerPopup', ['$document', '$compile', '$position', 'dateFilter', 'timepickerPopupConfig', function($document, $compile, $position, dateFilter, timepickerPopupConfig) {
+.directive('timepickerPopup', ['$document', '$compile', '$position', 'dateFilter', 'timepickerPopupConfig', function ($document, $compile, $position, dateFilter, timepickerPopupConfig) {
   return {
     restrict: 'EA',
     priority: 1,
     require: 'ngModel',
-    scope: {},
-    link: function(scope, element, attrs, ngModel) {
-      var popupEl = angular.element('<div timepicker-popup-wrap> <div timepicker></div> </div>').attr({'ng-model': 'time', 'ng-change': 'pickerChange()'}),
-          showMeridian = angular.isDefined(attrs.showMeridian)?scope.$parent.$eval(attrs.showMeridian):timepickerPopupConfig['show-meridian'],
-          timeFormat = showMeridian?'hh:mm a':'HH:mm';
+    scope: {
+      isOpen: '=?'
+    },
+    link: function (scope, element, attrs, ngModel) {
+      var appendToBody = angular.isDefined(attrs.timepickerAppendToBody) ? scope.$parent.$eval(attrs.timepickerAppendToBody) : timepickerPopupConfig.appendToBody,
+        popupEl = angular.element('<div timepicker-popup-wrap> <div timepicker></div> </div>').attr({'ng-model': 'time', 'ng-change': 'pickerChange()'}),
+        showMeridian = angular.isDefined(attrs.showMeridian) ? scope.$parent.$eval(attrs.showMeridian) : timepickerPopupConfig.showMeridian,
+        timeFormat = showMeridian ? 'hh:mm a' : 'HH:mm';
 
-      angular.element(popupEl.children()[0]).attr(angular.extend({}, scope.$parent.$eval(attrs.timepickerOptions)));
-      element.after($compile(popupEl)(scope));
+      function cameltoDash(string) {
+        return string.replace(/([A-Z])/g, function ($1) {
+          return '-' + $1.toLowerCase();
+        });
+      }
 
-      ngModel.$render = function(updateDisplay) {
+      // timepicker element
+      var timepickerEl = angular.element(popupEl.children()[0]);
+      if (attrs.timepickerOptions) {
+        angular.forEach(scope.$parent.$eval(attrs.timepickerOptions), function (value, option) {
+          timepickerEl.attr(cameltoDash(option), value);
+        });
+      }
+
+      ngModel.$render = function () {
         element.val(ngModel.$viewValue ? dateFilter(ngModel.$viewValue, timeFormat) : '');
         scope.time = ngModel.$modelValue;
       };
-      element.bind('input change keyup', function() {
-        scope.$apply(function() {
-          if (angular.isDate(ngModel.$modelValue)) {
-            scope.time = ngModel.$modelValue;
-          }
+
+      element.bind('input change keyup', function () {
+        scope.$apply(function () {
+          scope.time = ngModel.$modelValue;
         });
       });
-      element.bind('focus', function() {
-        scope.$apply(function() {
-          scope.position = $position.position(element);
-          scope.position.top = scope.position.top + element.prop('offsetHeight');
+
+      var documentClickBind = function () {
+        if (scope.isOpen && event.target !== element[0]) {
+          scope.$apply(function () {
+            scope.isOpen = false;
+          });
+        }
+      };
+
+      var openCalendar = function () {
+        scope.$apply(function () {
           scope.isOpen = true;
         });
+      };
+
+      scope.$watch('isOpen', function (value) {
+        if (value) {
+          scope.position = appendToBody ? $position.offset(element) : $position.position(element);
+          scope.position.top = scope.position.top + element.prop('offsetHeight');
+
+          $document.bind('click', documentClickBind);
+          element.unbind('focus', openCalendar);
+          element[0].focus();
+        } else {
+          $document.unbind('click', documentClickBind);
+          element.bind('focus', openCalendar);
+        }
       });
-      $document.bind('click', function(e) {
-        scope.$apply(function() {
-          if (e.target !== element[0]) {
-            scope.isOpen = false;
-          }
-        });
-      });
-      scope.pickerChange = function() {
+
+      scope.pickerChange = function () {
         ngModel.$setViewValue(scope.time);
         ngModel.$render();
       };
-      ngModel.$parsers.unshift(function (viewValue) {
-        if (angular.isDate(viewValue)) {
+
+      ngModel.$parsers.unshift(function parseTime(viewValue) {
+        if (!viewValue) {
+          ngModel.$setValidity('time', true);
+          return null;
+        } else if (angular.isDate(viewValue)) {
+          ngModel.$setValidity('time', true);
           return viewValue;
-        } else if (!viewValue) {
-          return null;
-        }
-        var isAM = (viewValue.indexOf('AM') == -1)?false:true,
-            isPM = (viewValue.indexOf('PM') == -1)?false:true,
-            colon = viewValue.indexOf(':'),
-            hour = parseInt(viewValue.substring(0, colon), 10),
-            minute =  parseInt(viewValue.substring(colon+1), 10),
-            newTime = new Date();
-        if (! (minute < 60 && minute > -1)) {
-          return null;
-        }
-        if(meridians && (hour > 0 && hour < 13)) {
-          newTime.setHours((hour + (((isPM && hour != 12) || (isAM && hour == 12))?12:0)));
-          newTime.setMinutes(minute);
+        } else if (angular.isString(viewValue)) {
+          var isAM = (viewValue.indexOf('AM') !== -1),
+              isPM = (viewValue.indexOf('PM') !== -1),
+              colon = viewValue.indexOf(':'),
+              meridians = isAM || isPM,
+              hour = parseInt(viewValue.substring(0, colon), 10),
+              minute = parseInt(viewValue.substring(colon + 1), 10),
+              newTime = new Date();
+          if (minute >= 60 && minute < 0) {
+            ngModel.$setValidity('time', false);
+            return undefined;
+          }
+          if (meridians && (hour > 0 && hour < 13)) {
+            if (isPM) {
+              if (hour !== 12) {
+                hour += 12;
+              }
+            } else if (isAM) {
+              if (hour === 12) {
+                hour = 0;
+              }
+            }
+            newTime.setHours(hour);
+            newTime.setMinutes(minute);
+          } else if (hour > -1 && hour < 24) {
+            newTime.setHours(hour);
+            newTime.setMinutes(minute);
+          }
+          ngModel.$setValidity('time', true);
           return newTime;
-        } else if (hour > -1 && hour < 25) {
-          newTime.setHours(hour);
-          newTime.setMinutes(minute);
-          return newTime;
+        } else {
+          ngModel.$setValidity('time', false);
+          return undefined;
         }
+      });
+
+      var $popup = $compile(popupEl)(scope);
+      if (appendToBody) {
+        $document.find('body').append($popup);
+      } else {
+        element.after($popup);
+      }
+
+      scope.$on('$destroy', function () {
+        $popup.remove();
+        element.unbind('focus', openCalendar);
+        $document.unbind('click', documentClickBind);
       });
     }
   };
@@ -343,4 +403,3 @@ angular.module('ui.bootstrap.timepicker', ['ui.bootstrap.position'])
     }
   };
 });
-
