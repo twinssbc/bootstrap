@@ -41,7 +41,7 @@ angular.module('ui.bootstrap.dropdown', [])
   };
 }])
 
-.controller('DropdownController', ['$scope', '$attrs', 'dropdownConfig', 'dropdownService', function($scope, $attrs, dropdownConfig, dropdownService) {
+.controller('DropdownController', ['$scope', '$attrs', 'dropdownConfig', 'dropdownService', '$animate', function($scope, $attrs, dropdownConfig, dropdownService, $animate) {
   var self = this, openClass = dropdownConfig.openClass;
 
   this.init = function( element ) {
@@ -53,8 +53,13 @@ angular.module('ui.bootstrap.dropdown', [])
     return $scope.isOpen = arguments.length ? !!open : !$scope.isOpen;
   };
 
+  // Allow other directives to watch status
+  this.isOpen = function() {
+    return $scope.isOpen;
+  };
+
   $scope.$watch('isOpen', function( value ) {
-    self.$element.toggleClass( openClass, value );
+    $animate[value ? 'addClass' : 'removeClass'](self.$element, openClass);
 
     if ( value ) {
       dropdownService.open( $scope );
@@ -102,6 +107,12 @@ angular.module('ui.bootstrap.dropdown', [])
             dropdownCtrl.toggle();
           });
         }
+      });
+
+      // WAI-ARIA
+      element.attr({ 'aria-haspopup': true, 'aria-expanded': false });
+      scope.$watch(dropdownCtrl.isOpen, function( isOpen ) {
+        element.attr('aria-expanded', !!isOpen);
       });
     }
   };

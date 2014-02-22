@@ -1,5 +1,4 @@
 describe('alert', function () {
-
   var scope, $compile;
   var element;
 
@@ -36,7 +35,7 @@ describe('alert', function () {
   }
 
   function findContent(index) {
-    return element.find('span').eq(index);
+    return element.find('div[ng-transclude] span').eq(index);
   }
 
   it('should generate alerts using ng-repeat', function () {
@@ -59,11 +58,12 @@ describe('alert', function () {
     }
   });
 
-  it('should show close buttons', function () {
+  it('should show close buttons and have the dismissable class', function () {
     var alerts = createAlerts();
 
     for (var i = 0, n = alerts.length; i < n; i++) {
       expect(findCloseButton(i).css('display')).not.toBe('none');
+      expect(alerts.eq(i)).toHaveClass('alert-dismissable');
     }
   });
 
@@ -81,10 +81,11 @@ describe('alert', function () {
     expect(scope.removeAlert).toHaveBeenCalledWith(1);
   });
 
-  it('should not show close buttons if no close callback specified', function () {
+  it('should not show close button and have the dismissable class if no close callback specified', function () {
     element = $compile('<alert>No close</alert>')(scope);
     scope.$digest();
     expect(findCloseButton(0)).toBeHidden();
+    expect(element).not.toHaveClass('alert-dismissable');
   });
 
   it('should be possible to add additional classes for alert', function () {
